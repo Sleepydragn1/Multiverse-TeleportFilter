@@ -1,0 +1,13 @@
+##########################################################################
+#            Multiverse Teleport Filter Configuration                    #
+#                                                                        #
+# See http://sleepydragn1.github.io/multiverse-teleportfilter/config for #
+#         information about formatting and example configs.              #
+#                                                                        #
+##########################################################################
+
+options:
+    enabled: false
+    ignore permissions: false
+
+teleportfilter:

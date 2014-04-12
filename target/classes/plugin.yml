@@ -1,3 +1,7 @@
 name: MultiverseTeleportFilter
 main: io.github.sleepydragn1.MultiverseTeleportFilter.MultiverseTeleportFilter
 version: 1.0
+permissions:
+    multiverse.teleportfilter.bypass:
+        description: Allows players to bypass the teleport filter and teleport to any world they have access to.
+        default: op
