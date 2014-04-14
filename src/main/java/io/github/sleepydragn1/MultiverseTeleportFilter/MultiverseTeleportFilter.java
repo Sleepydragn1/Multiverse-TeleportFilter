@@ -18,10 +18,11 @@ import org.bukkit.permissions.*;
 
 public final class MultiverseTeleportFilter extends JavaPlugin implements Listener {
 	MultiverseTeleportFilter plugin;
+	PluginDescriptionFile pluginyml = this.getDescription();
 	
 	@Override    
 	public void onEnable() {
-    	System.out.println("[Multiverse-TeleportFilter] enabled.");
+    	System.out.println("[Multiverse-TeleportFilter] enabled - Version " + pluginyml.getVersion() + ".");
     	
     	// Retrieves the configuration file, loads its entries for later use
     	/*plugin.getConfig();
@@ -41,52 +42,42 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements Listen
 	@EventHandler
 	public void onTP(MVTeleportEvent e) {
 		
-		MVWorldManager = getServer().getPluginManager().getPlugin("MultverseCore").getCore().getMVWorldManager();
-		
 		Player teleportee; 
-		World origin;
-		String originName;
-		MultiverseWorld destination;
+		String originName, rawDestinationName, destinationName;
 		
 		teleportee = e.getTeleportee();
-		origin = teleportee.getWorld();
-		destination = getMVWorld(e.getDestination().getName());
+		originName = teleportee.getWorld().getName();
+		rawDestinationName = e.getDestination().getName());
+		destinationName = rawDestinationName.substring(1,(rawDestinationName.length() - 1));
 		
-		System.out.println("TPF " + origin.getName() + " to " + destination.getString());
-		teleportee.sendMessage("TPF " + origin.getName() + " to " + destination.getString());
+		System.out.println("TPF " + originName + " to " + rawDestinationName);
+		teleportee.sendMessage("TPF " + originName + " to " + rawDestinationName);
 		
-		if (teleportFilter(teleportee, origin, destination) == 1) {
+		if (teleportFilter(teleportee, originName, destinationName) == 1) {
 			e.setCancelled(true);
-			teleportee.sendMessage("You're not allowed to teleport to " + destination.getName() + ".");
+			teleportee.sendMessage("You're not allowed to teleport to " + rawDestinationName + ".");
 		}
-		if (teleportFilter(teleportee, origin, destination) == 2) {
+		if (teleportFilter(teleportee, originName, destinationName) == 2) {
 			e.setCancelled(true);
-			teleportee.sendMessage("You're not allowed to teleport to " + destination.getName() + " when in " + origin.getName() + ".");
+			teleportee.sendMessage("You're not allowed to teleport to " + rawDestinationName + " when in " + originName + ".");
 		}
-        
-		//System.out.println("this is an event, lolololol");
 	}
 	
-	@EventHandler
-	public void onSTP(PlayerTeleportEvent e) {
-		System.out.println("META");
-	}
-	
-	public int teleportFilter(Player teleportee, World origin, MVDestination destination) {
+	public int teleportFilter(Player teleportee, String originName, String destinationName) {
 		int i = 0;
 		
 		if (!teleportee.hasPermission("multiverse.teleportfilter.bypass"))
         {	
-        	if (destination.getName().equals("Dragon2_nether")) i = 1;
-        	if (destination.getName().equals("Dragon2_the_end")) i = 1;
-        	if (origin.getName().equals("Dragon2_nether") && destination.getName().equals("Dragon2")) i = 2;
-        	if (origin.getName().equals("Dragon2_nether") && destination.getName().equals("Main")) i = 2;
-        	if (origin.getName().equals("Dragon2_nether") && destination.getName().equals("DragonCreative")) i = 2;
-        	if (origin.getName().equals("Dragon2_nether") && destination.getName().equals("Creative")) i = 2;
-        	if (origin.getName().equals("Dragon2_the_end") && destination.getName().equals("Dragon2")) i = 2;
-        	if (origin.getName().equals("Dragon2_the_end") && destination.getName().equals("Main")) i = 2;
-        	if (origin.getName().equals("Dragon2_the_end") && destination.getName().equals("DragonCreative")) i = 2;
-        	if (origin.getName().equals("Dragon2_the_end") && destination.getName().equals("Creative")) i = 2;
+        	if (destinationName.equals("Dragon2_nether")) i = 1;
+        	if (destinationName.equals("Dragon2_the_end")) i = 1;
+        	if (originName.equals("Dragon2_nether") && destinationName.equals("Dragon2")) i = 2;
+        	if (originName.equals("Dragon2_nether") && destinationName.equals("Main")) i = 2;
+        	if (originName.equals("Dragon2_nether") && destinationName.equals("DragonCreative")) i = 2;
+        	if (originName.equals("Dragon2_nether") && destinationName.equals("Creative")) i = 2;
+        	if (originName.equals("Dragon2_the_end") && destinationName.equals("Dragon2")) i = 2;
+        	if (originName.equals("Dragon2_the_end") && destinationName.equals("Main")) i = 2;
+        	if (originName.equals("Dragon2_the_end") && destinationName.equals("DragonCreative")) i = 2;
+        	if (originName.equals("Dragon2_the_end") && destinationName.equals("Creative")) i = 2;
         }
         return i;
 	}
