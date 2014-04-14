@@ -43,23 +43,24 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements Listen
 	public void onTP(MVTeleportEvent e) {
 		
 		Player teleportee; 
-		String originName, rawDestinationName, destinationName;
+		String originName, fancyTextDestinationName, destinationName;
 		
 		teleportee = e.getTeleportee();
 		originName = teleportee.getWorld().getName();
-		rawDestinationName = e.getDestination().getName());
-		destinationName = rawDestinationName.substring(1,(rawDestinationName.length() - 1));
+		fancyTextDestinationName = e.getDestination().getName();
+		destinationName = getFancyText(fancyTextDestinationName);
+		//destinationName = fancyTextDestinationName.substring(1,(fancyTextDestinationName.length() - 1));
 		
-		System.out.println("TPF " + originName + " to " + rawDestinationName);
-		teleportee.sendMessage("TPF " + originName + " to " + rawDestinationName);
+		System.out.println("TPF " + originName + " to " + destinationName);
+		teleportee.sendMessage("TPF " + originName + " to " + fancyTextDestinationName);
 		
 		if (teleportFilter(teleportee, originName, destinationName) == 1) {
 			e.setCancelled(true);
-			teleportee.sendMessage("You're not allowed to teleport to " + rawDestinationName + ".");
+			teleportee.sendMessage("You're not allowed to teleport to " + fancyTextDestinationName + ".");
 		}
 		if (teleportFilter(teleportee, originName, destinationName) == 2) {
 			e.setCancelled(true);
-			teleportee.sendMessage("You're not allowed to teleport to " + rawDestinationName + " when in " + originName + ".");
+			teleportee.sendMessage("You're not allowed to teleport to " + fancyTextDestinationName + " when in " + originName + ".");
 		}
 	}
 	
