@@ -12,6 +12,7 @@ import org.bukkit.plugin.messaging.*;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.event.*;
 import org.bukkit.event.player.*;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.*;
 import org.bukkit.Location;
 import org.bukkit.permissions.*;
@@ -42,25 +43,34 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements Listen
 	@EventHandler
 	public void onTP(MVTeleportEvent e) {
 		
-		Player teleportee; 
-		String originName, fancyTextDestinationName, destinationName;
+		final MultiverseWorld multiverseworld;
+		final MVWorldManager multiverseworldmanager;
+		final WorldManager worldmanager;
 		
+		Player teleportee; 
+		CommandSender teleporter;
+		String originName, fancyTextOriginName, destinationName, fancyTextDestinationName;
+		
+		teleporter = e.getTeleporter();
 		teleportee = e.getTeleportee();
+		
 		originName = teleportee.getWorld().getName();
+		fancyTextOriginName = worldmanager.getMVWorld(originName).getName();
 		fancyTextDestinationName = e.getDestination().getName();
-		destinationName = getFancyText(fancyTextDestinationName);
-		//destinationName = fancyTextDestinationName.substring(1,(fancyTextDestinationName.length() - 1));
+		destinationName = fancyTextDestinationName.substring(1,(fancyTextDestinationName.length() - 1));
 		
 		System.out.println("TPF " + originName + " to " + destinationName);
 		teleportee.sendMessage("TPF " + originName + " to " + fancyTextDestinationName);
 		
-		if (teleportFilter(teleportee, originName, destinationName) == 1) {
-			e.setCancelled(true);
-			teleportee.sendMessage("You're not allowed to teleport to " + fancyTextDestinationName + ".");
-		}
-		if (teleportFilter(teleportee, originName, destinationName) == 2) {
-			e.setCancelled(true);
-			teleportee.sendMessage("You're not allowed to teleport to " + fancyTextDestinationName + " when in " + originName + ".");
+		if (teleporter instanceof Player) {
+			if (teleportFilter(teleportee, originName, destinationName) == 1) {
+				e.setCancelled(true);
+				teleportee.sendMessage("You're not allowed to teleport to " + fancyTextDestinationName + ".");
+			}
+			if (teleportFilter(teleportee, originName, destinationName) == 2) {
+				e.setCancelled(true);
+				teleportee.sendMessage("You're not allowed to teleport to " + fancyTextDestinationName + " when in " + originName + ".");
+			}
 		}
 	}
 	
