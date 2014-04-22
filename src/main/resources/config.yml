@@ -8,6 +8,6 @@
 
 options:
     enabled: false
-    ignore permissions: false
+    ignore-permissions: false
 
 teleportfilter:

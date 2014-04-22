@@ -35,6 +35,7 @@ import org.bukkit.event.*;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.*;
 import org.bukkit.permissions.*;
+import org.bukkit.configuration.file.FileConfiguration;
 
 import com.onarandombox.MultiverseCore.MultiverseCore;
 import com.onarandombox.MultiverseCore.event.MVTeleportEvent;
@@ -43,32 +44,50 @@ import com.onarandombox.MultiverseCore.destination.WorldDestination;
 
 public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlugin, Listener {
 	MultiverseTeleportFilter plugin;
-	PluginDescriptionFile pluginyml = this.getDescription();
+//	PluginDescriptionFile pluginyml = this.getDescription();
 	
 	private MultiverseCore core;
 	
 	private static final Logger log = Logger.getLogger("Minecraft");
 	private static final String logPrefix = "[Multiverse-TeleportFilter] ";
+	private static final int PROTOCOL = 1;
+	private FileConfiguration config;
 	
 	@Override    
 	public void onEnable() {
     	// Retrieves the configuration file, loads its entries for later use
-    	/*plugin.getConfig();
-    	if (plugin.getConfig().getBoolean("options.enabled")) {
-    		log.info(logPrefix + "Multiverse-Teleport filter has been disabled by config.yml. Perhaps you should uninstall it instead?");
-    		System.out.println("[Multiverse-TeleportFilter] disabled by config.yml.");
+    	
+		this.config = plugin.getConfig();
+    	
+    	// Checks if the "enabled" option in config.yml is true/false and acts accordingly
+		if (!config.getBoolean("options.enabled")) {
+    		log(Level.INFO, "Multiverse-Teleport filter has been disabled by config.yml. Perhaps you should uninstall it instead?");
+    		System.out.println(logPrefix + "disabled by config.yml.");
     		plugin.setEnabled(false);
     	}
-    	*/
+    	
 		this.core = (MultiverseCore) getServer().getPluginManager().getPlugin("Multiverse-Core");
 		
+		// Checks if Multiverse-Core is running
 		if (this.core == null) {
-			log.warning(logPrefix + "Multiverse-Core has not been detected running.");
-			System.out.println("[Multiverse-TeleportFilter] Multiverse-Core has not been detected running. Disabling Multiverse-TeleportFilter.");
+			log(Level.WARNING, "Multiverse-Core has not been detected running.");
+			System.out.println(logPrefix + "Multiverse-Core has not been detected running.");
+			System.out.println(logPrefix + "Disabling Multiverse-TeleportFilter.");
 			plugin.setEnabled(false);
     	}
+		if (core.getProtocolVersion() != 18) {
+			if (!config.getBoolean("options.ignore-core-version-check")) {
+				log(Level.SEVERE, "Multiverse-Core has been updated past Multiverse-TeleportFilter, so Multiverse-TeleportFilter has been disabled. Ask the plugin author to update the plugin, or enable \"ignore-core-version\" in config.yml!");
+				System.out.println(logPrefix + "Multiverse-Core has been updated past Multiverse-TeleportFilter. Ask the plugin author to update the plugin, or enable \"ignore-core-version\" in config.yml!");
+				System.out.println(logPrefix + "Disabling Multiverse-TeleportFilter.");
+				plugin.setEnabled(false);
+			}
+			else {
+				System.out.println(logPrefix + "Multiverse-Core has been updated past Multiverse-TeleportFilter. Ask the plugin author to update the plugin, or enable \"ignore-core-version\" in config.yml!");
+		}
 		
     	System.out.println("[Multiverse-TeleportFilter] enabled.");
+    	log(Level.INFO, "Multiverse-TeleportFilter has been enabled successfully.");
     	this.core.incrementPluginCount();
     	
     	getServer().getPluginManager().registerEvents(this, this);
@@ -97,8 +116,11 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 		else {
 			destinationName = fancyTextDestinationName;
 		}
+		
+		/*
 		System.out.println("TPF " + originName + " to " + destinationName);
 		teleportee.sendMessage("TPF " + originName + " to " + fancyTextDestinationName);
+		*/
 		
 		// Allows the console to bypass the teleportFilter check
 		if (teleporter instanceof Player) {
@@ -117,26 +139,45 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 	}
 	
 	public int teleportFilter(Player teleportee, String originName, String destinationName) {
-		// t = 0 ----> Teleportee is allowed to make the teleport
-		// t = 1 ----> Teleportee's teleport is denied based on a wildcard filter (i.e. all teleports to that destination world are denied)
-		// t = 2 ----> Teleportee's teleport is denied based on a specific filter (i.e. teleporst from this specific origin world to the
+		// returns 0 ----> Teleportee is allowed to make the teleport
+		// returns 1 ----> Teleportee's teleport is denied based on a wildcard filter (i.e. all teleports to that destination world are denied)
+		// returns 2 ----> Teleportee's teleport is denied based on a specific filter (i.e. teleports from this specific origin world to the
 		// destination is denied)
-		int t = 0;
 		
-		if (!teleportee.hasPermission("multiverse.teleportfilter.bypass"))
-        {	
-        	if (destinationName.equals("Dragon2_nether")) t = 1;
-        	if (destinationName.equals("Dragon2_the_end")) t = 1;
-        	if (originName.equals("Dragon2_nether") && destinationName.equals("Dragon2")) t = 2;
-        	if (originName.equals("Dragon2_nether") && destinationName.equals("Main")) t = 2;
-        	if (originName.equals("Dragon2_nether") && destinationName.equals("DragonCreative")) t = 2;
-        	if (originName.equals("Dragon2_nether") && destinationName.equals("Creative")) t = 2;
-        	if (originName.equals("Dragon2_the_end") && destinationName.equals("Dragon2")) t = 2;
-        	if (originName.equals("Dragon2_the_end") && destinationName.equals("Main")) t = 2;
-        	if (originName.equals("Dragon2_the_end") && destinationName.equals("DragonCreative")) t = 2;
-        	if (originName.equals("Dragon2_the_end") && destinationName.equals("Creative")) t = 2;
-        }
-        return t;
+		if (config.isSet("multiverse.teleportfilter." + destinationName + ".*")) {
+			if (config.getBoolean("options.ignore-permissions")) return 1;
+			if (!teleportee.hasPermission("multiverse.teleportfilter.bypass"))
+	        {	
+	        	if(teleportee.hasPermission("multiverse.teleportfilter." + destinationName + ".*")) return 0;
+				if(teleportee.hasPermission("multiverse.teleportfilter." + destinationName + "." + originName)) return 0;
+				else return 1;
+	        }
+			else return 0;	
+		}
+		if (config.isSet("multiverse.teleportfilter." + destinationName + "." + originName)) {
+			if (config.getBoolean("options.ignore-permissions")) return 1;
+			if (!teleportee.hasPermission("multiverse.teleportfilter.bypass"))
+	        {	
+	        	if(teleportee.hasPermission("multiverse.teleportfilter." + destinationName + ".*")) return 0;
+				if(teleportee.hasPermission("multiverse.teleportfilter." + destinationName + "." + originName)) return 0;
+				else return 1;
+	        }
+			else return 0;	
+		}
+		else return 0;
+		
+		/*
+		if (destinationName.equals("Dragon2_nether")) t = 1;
+    	if (destinationName.equals("Dragon2_the_end")) t = 1;
+    	if (originName.equals("Dragon2_nether") && destinationName.equals("Dragon2")) t = 2;
+    	if (originName.equals("Dragon2_nether") && destinationName.equals("Main")) t = 2;
+    	if (originName.equals("Dragon2_nether") && destinationName.equals("DragonCreative")) t = 2;
+    	if (originName.equals("Dragon2_nether") && destinationName.equals("Creative")) t = 2;
+    	if (originName.equals("Dragon2_the_end") && destinationName.equals("Dragon2")) t = 2;
+    	if (originName.equals("Dragon2_the_end") && destinationName.equals("Main")) t = 2;
+    	if (originName.equals("Dragon2_the_end") && destinationName.equals("DragonCreative")) t = 2;
+    	if (originName.equals("Dragon2_the_end") && destinationName.equals("Creative")) t = 2;
+    	*/
 	}
 
 	@Override
@@ -157,7 +198,7 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 
 	@Override
 	public int getProtocolVersion() {
-		return 1;
+		return PROTOCOL;
 	}
 
 	@Override
