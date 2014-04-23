@@ -8,6 +8,7 @@
 
 options:
     enabled: false
+    soft-disable: false
     ignore-permissions: false
     ignore-core-version-check: false
 teleportfilter:

@@ -1,9 +1,68 @@
 name: Multiverse-TeleportFilter
 main: io.github.sleepydragn1.MultiverseTeleportFilter.MultiverseTeleportFilter
 authors: ['Sleepydragn1']
-version: 1.0
+version: maven-version-number
 depend: ['Multiverse-Core']
+commands:
+    mvtpf:
+        description: Parent Multiverse-TeleportFilter command, gives information on the plugin.
+        usage: /<command>
+        permission: multiverse.teleportfilter.status
+        permission-message: You need <permission> to run this command.
+    mvtpfreload:
+        description: Reloads the plugin and configuration files.
+        usage: /<command>
+        permission: multiverse.teleportfilter.reload
+        permission-message: You need <permission> to run this command.
+    mvtpfdisable:
+        description: Disables the teleport filter.
+        usage: /<command>
+        permission: multiverse.teleportfilter.disable
+        permission-message: You need <permission> to run this command.
+    mvtpfenable:
+        description: Enables the teleport filter.
+        usage: /<command>
+        permission: multiverse.teleportfilter.enable
+        permission-message: You need <permission> to run this command.
+    mvtpfallowed:
+        description: Checks if a specific player will trigger the filter when teleporting with a specified orgin world and destination world.
+        usage: |
+                /<command> [destination world] -- Checks if the player sending the command is allowed to teleport to the specified destination world from their current world.
+                /<command> [destination world] [origin world] -- Checks if the player sending the command is allowed to teleport to the specified destination world from the specified origin world.
+                /<command> [player] [destination world] [origin world] -- Checks if the specified player is allowed to teleport to the specified destination world from the specified origin world.
+        permission: multiverse.teleportfilter.allowed
+        permission-message: You need <permission> to run this command.
+    mvtpffilter:
+       description: Modifies the teleport filter configuration by adding or removing entries.
+       usage: |
+               /<command> add [destination world] [origin world] -- Adds a filter entry for the specified destination and origin worlds.
+               /<command> remove [destination world] [origin world] -- Removes a filter entry for the specified destination and origin worlds.
+       permission-message: You need multiverse.teleportfilter.filter.add or multiverse.teleportfilter.filter.remove to run this command.
 permissions:
+    multiverse.teleportfilter.*:
+        description: Bestows all Multiverse-TeleportFilter permissions.
+        children:
+            multiverse.teleportfilter.status: true
+            multiverse.teleportfilter.reload: true
+            multiverse.teleportfilter.disable: true
+            multiverse.teleportfilter.enable: true
+            multiverse.teleportfilter.allowed: true
+            multiverse.teleportfilter.filter.add: true
+            multiverse.teleportfilter.filter.remove: true
+        default: op
+    multiverse.teleportfilter.status:
+        description: Allows players to run /mvtpf
+    multiverse.teleportfilter.reload:
+        description: Allows players to run /mvtpfreload. 
+    multiverse.teleportfilter.disable:
+        description: Allows players to run /mvtpfdisable. 
+    multiverse.teleportfilter.status:
+        description: Allows players to run /mvtpfenable. 
+    multiverse.teleportfilter.status:
+        description: Allows players to run /mvtpfallowed.
+    multiverse.teleportfilter.filter.add:
+        description: Allows players to run /mvtpffilter add.
+    multiverse.teleportfilter.filter.remove:
+        description: Allows players to run /mvtpffilter remove.  
     multiverse.teleportfilter.bypass:
         description: Allows players to bypass the teleport filter and teleport to any world they have access to.
-        default: op
