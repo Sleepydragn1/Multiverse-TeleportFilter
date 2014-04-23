@@ -9,5 +9,10 @@
 options:
     enabled: false
     ignore-permissions: false
-
+    ignore-core-version-check: false
 teleportfilter:
+    exampledestinationworld1:
+        - exampleoriginworld1
+        - exampleoriginworld2
+    exampledestinationworld2:
+        - all
