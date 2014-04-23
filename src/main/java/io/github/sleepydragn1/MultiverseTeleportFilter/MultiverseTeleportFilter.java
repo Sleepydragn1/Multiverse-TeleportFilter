@@ -106,7 +106,7 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 	// Called when a MVTeleportEvent happens (i.e. someone attempts to teleport somewhere using Multiverse)
 	@EventHandler
 	public void onTP(MVTeleportEvent e) {	
-		// Checks if the softDisable flag is true (if "/mvtpf disable" has been run, it will be true), and then stops any filter
+		// Checks if the softDisable flag is true (if "/mvtpfdisable" has been run, it will be true), and then stops any filter
 		// checking if it is true
 		if (plugin.softDisable) return;
 		
@@ -278,7 +278,7 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 			}
 			if (personalFlag) {
 				switch (teleportFilter(player, originName, destinationName)) {
-					case 0: sender.sendMessage ("You cannot teleport to " + fancyTextDestinationName + " from " + fancyTextOriginName + ".");
+					case 0: sender.sendMessage ("You can teleport to " + fancyTextDestinationName + " from " + fancyTextOriginName + ".");
 					case 1: sender.sendMessage("You cannot teleport to " + fancyTextDestinationName + " from any world.");
 					case 2: sender.sendMessage("You cannot teleport to " + fancyTextDestinationName + " from " + fancyTextOriginName + ".");
 				}
