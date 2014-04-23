@@ -189,6 +189,7 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 	
 	// Here be MVTPF's commands
 	@Override
+	// Ignores Bukkit's deprecation flag on getPlayer(), which is needed in this instance
 	@SuppressWarnings("deprecation")
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 		// Reload command
