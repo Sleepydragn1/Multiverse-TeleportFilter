@@ -7,7 +7,7 @@
 ##########################################################################
 
 options:
-    enabled: false
+    enabled: true
     soft-disable: false
     ignore-permissions: false
     ignore-core-version-check: false

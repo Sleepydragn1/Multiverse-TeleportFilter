@@ -1,7 +1,7 @@
 name: Multiverse-TeleportFilter
 main: io.github.sleepydragn1.MultiverseTeleportFilter.MultiverseTeleportFilter
 authors: ['Sleepydragn1']
-version: maven-version-number
+version: 0.1.0
 depend: ['Multiverse-Core']
 commands:
     mvtpf:
@@ -56,9 +56,9 @@ permissions:
         description: Allows players to run /mvtpfreload. 
     multiverse.teleportfilter.disable:
         description: Allows players to run /mvtpfdisable. 
-    multiverse.teleportfilter.status:
+    multiverse.teleportfilter.enable:
         description: Allows players to run /mvtpfenable. 
-    multiverse.teleportfilter.status:
+    multiverse.teleportfilter.allowed:
         description: Allows players to run /mvtpfallowed.
     multiverse.teleportfilter.filter.add:
         description: Allows players to run /mvtpffilter add.

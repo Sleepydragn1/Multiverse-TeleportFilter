@@ -34,6 +34,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.Server;
 import org.bukkit.event.*;
 import org.bukkit.command.*;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.configuration.file.FileConfiguration;
 
@@ -152,8 +153,7 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 		// destination is denied)
 		if (config.getStringList("teleportfilter." + destinationName).contains(originName)) {
 			if (config.getBoolean("options.ignore-permissions")) return 1;
-			if (!teleportee.hasPermission("multiverse.teleportfilter.bypass"))
-	        {	
+			if (!teleportee.hasPermission("multiverse.teleportfilter.bypass")) {	
 	        	if(teleportee.hasPermission("multiverse.teleportfilter." + destinationName + ".*")) return 0;
 				if(teleportee.hasPermission("multiverse.teleportfilter." + destinationName + "." + originName)) return 0;
 				else return 1;
@@ -162,8 +162,7 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 		}
 		if (config.getStringList("teleportfilter." + destinationName).contains("all") || config.getStringList("teleportfilter." + destinationName).contains("wildcard")) {
 			if (config.getBoolean("options.ignore-permissions")) return 2;
-			if (!teleportee.hasPermission("multiverse.teleportfilter.bypass"))
-	        {	
+			if (!teleportee.hasPermission("multiverse.teleportfilter.bypass")) {	
 	        	if(teleportee.hasPermission("multiverse.teleportfilter." + destinationName + ".*")) return 0;
 				if(teleportee.hasPermission("multiverse.teleportfilter." + destinationName + "." + originName)) return 0;
 				else return 2;
@@ -183,7 +182,16 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
     		log(Level.INFO, "Multiverse-Teleport filter has been disabled by config.yml. Perhaps you should uninstall it instead?");
     		log(Level.INFO, "Disabling Multiverse-TeleportFilter.");
     		plugin.setEnabled(false);
-    		return;
+    	}	
+		
+		// Checks if the "soft-disable" option in config.yml is true/false and acts accordingly
+		if (config.getBoolean("options.soft-disable") && (!softDisable)) {
+			plugin.softDisable = true;
+			log(Level.INFO,"Teleport filter disabled due to configuration change!");
+    	}
+		if ((!config.getBoolean("options.soft-disable")) && (softDisable)) {
+			plugin.softDisable = false;
+			log(Level.INFO,"Teleport filter enabled due to configuration change!");
     	}	
 	}
 	
@@ -192,13 +200,23 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 	// Ignores Bukkit's deprecation flag on getPlayer(), which is needed in this instance
 	@SuppressWarnings("deprecation")
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+		// Parent command/status command
+		if (cmd.getName().equalsIgnoreCase("mvtpf")) {
+			// Indicates it's running and gives the current version
+			sender.sendMessage("Running Multiverse-TeleportFilter version " + plugin.getDescription().getVersion() + "!");
+			// Indicates whether or not the filter is enabled
+			if (softDisable) sender.sendMessage("The teleport filter is currently disabled.");
+			if (!softDisable) sender.sendMessage("The teleport filter is currently enabled.");
+			return true;
+		}
 		// Reload command
-		if (cmd.getName().equalsIgnoreCase("mvtpfreload") && (sender.hasPermission("multiverse.teleportfilter.reload") || (!(sender instanceof Player)))) { 
+		if (cmd.getName().equalsIgnoreCase("mvtpfreload")) { 
 			plugin.reload();
+			sender.sendMessage("Plugin configuration reloaded!");
 			return true;
 		}
 		// Disable command
-		if (cmd.getName().equalsIgnoreCase("mvtpfdisable") && (sender.hasPermission("multiverse.teleportfilter.disable") || (!(sender instanceof Player)))) {
+		if (cmd.getName().equalsIgnoreCase("mvtpfdisable")) {
 			if (softDisable = false) {
 				plugin.softDisable = true;
 				config.set("options.soft-disable", true);
@@ -208,7 +226,7 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 			return true;
 		}
 		// Enable command
-		if (cmd.getName().equalsIgnoreCase("mvtpfenable") && (sender.hasPermission("multiverse.teleportfilter.enable") || (!(sender instanceof Player)))) {
+		if (cmd.getName().equalsIgnoreCase("mvtpfenable")) {
 			if (softDisable = false) {
 				plugin.softDisable = true;
 				config.set("options.soft-disable", false);
@@ -218,83 +236,151 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 			return true;
 		}
 		// Status command
-		if (cmd.getName().equalsIgnoreCase("mvtpfstatus") && (sender.hasPermission("multiverse.teleportfilter.status") || (!(sender instanceof Player)))) {
+		if (cmd.getName().equalsIgnoreCase("mvtpfstatus")) {
 			if (softDisable) sender.sendMessage("The teleport filter is currently disabled.");
 			if (!softDisable) sender.sendMessage("The teleport filter is currently enabled.");
 			else sender.sendMessage("The teleport filter has become Schrödinger's cat, please contact the plugin author accordingly.");
 			return true;
 		}
+		
+		// Declaration of variables shared between commands due to naming standardization
+		String originName, destinationName, fancyTextDestinationName, fancyTextOriginName;
+		
 		// Allowed command
-		if (cmd.getName().equalsIgnoreCase("mvtpfallowed") && (sender.hasPermission("multiverse.teleportfilter.allowed") || (!(sender instanceof Player)))) {
+		if (cmd.getName().equalsIgnoreCase("mvtpfallowed") && (args.length > 0)) {	
 			Player player;
-			String originName, destinationName;
 			// Flag indicates whether or not the sender is checking themselves via the command
 			Boolean personalFlag = false;
-				
-			// Checks if the sender is a player or console, acts accordingly
-			if (sender instanceof Player) {
-				if (bukkit.getPlayer(args[0]) != null) {
-					player = bukkit.getPlayer(args[0]);
-					if ((Player) sender == player) personalFlag = true;
+			Boolean playerFlag = false;
+			
+			// Player checking
+			if (bukkit.getPlayer(args[0]) != null) {
+				player = bukkit.getPlayer(args[0]);
+				playerFlag = true;
+				// Checks if the sender is specifying themselves
+				try {
+					if (player == (Player) sender) personalFlag = true;
 				}
-				else {
-					player = (Player) sender;
-					personalFlag = true;
+				// If the console is sending this command, it'll throw ClassCastException, but be caught and therefore leave
+				// personalFlag to be defined by its default value — false
+				catch (ClassCastException e) {
 				}
 			}
 			else {
-				if (bukkit.getPlayer(args[0]) != null) player = bukkit.getPlayer(args[0]);
+				// If player is meant to specified (3 or more arguments), it tells the sender that the player specified is invalid
+				if (args.length > 2) {
+					sender.sendMessage(args[0] + " is not a valid online player.");
+					return true;
+				}
+				// Determines if the sender is a player or a non-player (console or otherwise)
+				if (!(sender instanceof Player)) {
+					sender.sendMessage(args[0] + " is not a valid online player.");
+					return true;
+				}
+				player = (Player) sender;
+				personalFlag = true;
+			}
+			
+			// World checking
+			if (playerFlag) {
+				if (args.length > 2) {
+					if (bukkit.getWorld(args[1]) == null) {
+						sender.sendMessage(args[1] + " is not a valid world!");
+						return true;
+					}
+					if (bukkit.getWorld(args[2]) == null) {
+						sender.sendMessage(args[2] + " is not a valid world!");
+						return true;
+					}
+					else {
+						destinationName = bukkit.getWorld(args[1]).getName();
+						originName = bukkit.getWorld(args[2]).getName();
+					}
+				}
 				else return false;
 			}
+			else {
+				// Checks if the worlds are valid
+				if (args.length > 1) {
+					if (bukkit.getWorld(args[0]) == null) {
+						sender.sendMessage(args[0] + " is not a valid world!");
+						return true;
+					}
+					else {
+						destinationName = bukkit.getWorld(args[0]).getName();
+					}
 				
-			// Checks for number of arguments and validity of the specified worlds, and acts accordingly
-			if (bukkit.getWorld(args[1]) != null) {
-				if (bukkit.getWorld(args[2]) != null) { 
-					originName = bukkit.getWorld(args[1]).getName();
-					destinationName = bukkit.getWorld(args[2]).getName();
+					if (bukkit.getWorld(args[1]) == null) {
+						sender.sendMessage(args[1] + " is not a valid world!");
+						return true;
+					}
+					else {
+						originName = bukkit.getWorld(args[1]).getName();
+					}
 				}
 				else {
-					originName = player.getWorld().getName();
-					destinationName = bukkit.getWorld(args[1]).getName();
+					if (bukkit.getWorld(args[0]) == null) {
+						sender.sendMessage(args[0] + " is not a valid world!");
+						return true;
+					}
+					else {
+						destinationName = bukkit.getWorld(args[0]).getName();
+						originName = ((Player) sender).getWorld().getName();
+					}
 				}
 			}
-			else {
-				sender.sendMessage(args[1] + " is not a valid world!");
-				return false;
-			}
-				
+			
 			// Return of the Fancy Text names used in sendMessage()
-			String fancyTextOriginName = multiverseworldmanager.getMVWorld(originName).getName();
-			String fancyTextDestinationName = multiverseworldmanager.getMVWorld(destinationName).getName();
-				
+			fancyTextOriginName = multiverseworldmanager.getMVWorld(originName).getName();
+			fancyTextDestinationName = multiverseworldmanager.getMVWorld(destinationName).getName();
+			
 			// Checks if the specified player is allowed to do the specified teleport, then reports back.
-			if (!personalFlag) {
+			if (!personalFlag && (sender instanceof Player)) {
 				switch (teleportFilter(player, originName, destinationName)) {
 					case 0: sender.sendMessage(player.getName() + " can teleport to " + fancyTextDestinationName + " from " + fancyTextOriginName + ".");
+							break;
 					case 1: sender.sendMessage(player.getName() + " cannot teleport to " + fancyTextDestinationName + " from any world.");
+							break;
 					case 2: sender.sendMessage(player.getName() + " cannot teleport to " + fancyTextDestinationName + " from " + fancyTextOriginName + ".");
+							break;
 				}
 				return true;
 			}
-			if (personalFlag) {
+			if (personalFlag && (sender instanceof Player)) {
 				switch (teleportFilter(player, originName, destinationName)) {
 					case 0: sender.sendMessage ("You can teleport to " + fancyTextDestinationName + " from " + fancyTextOriginName + ".");
+							break;
 					case 1: sender.sendMessage("You cannot teleport to " + fancyTextDestinationName + " from any world.");
+							break;
 					case 2: sender.sendMessage("You cannot teleport to " + fancyTextDestinationName + " from " + fancyTextOriginName + ".");
+							break;
 				}
 				return true;
 			}
-				
+			else {
+				switch (teleportFilter(player, originName, destinationName)) {
+					case 0: sender.sendMessage (player.getName() + " can teleport to " + destinationName + " from " + originName + ".");
+							break;
+					case 1: sender.sendMessage(player.getName() + " cannot teleport to " + destinationName + " from any world.");
+							break;
+					case 2: sender.sendMessage(player.getName() + " cannot teleport to " + destinationName + " from " + originName + ".");
+							break;
+				}
+				return true;
+			}
+		}
+		// Parent filter command
+		if (cmd.getName().equalsIgnoreCase("mvtpffilter") && (args.length == 0) && ((sender.hasPermission("multiverse.teleportfilter.filter.add") || (sender.hasPermission("multiverse.teleportfilter.filter.remove"))))) {
 			return false;
 		}
 		// Filter Add Command
-		if (cmd.getName().equalsIgnoreCase("mvtpffilter") && args[0].equalsIgnoreCase("add") && (args[1] != null) && (args[2] != null) && (sender.hasPermission("multiverse.teleportfilter.filter.add") || (!(sender instanceof Player)))) {
+		if (cmd.getName().equalsIgnoreCase("mvtpffilter") && args[0].equalsIgnoreCase("add") && (args.length == 3)) {
 			if (bukkit.getWorld(args[1]) != null) {
 				if ((bukkit.getWorld(args[2]) != null) || (args[2] == "all") || (args[2] == "wildcard")) {
-					String destinationName = args[1];
-					String originName = args[2];
-					String fancyTextOriginName = multiverseworldmanager.getMVWorld(originName).getName();
-					String fancyTextDestinationName = multiverseworldmanager.getMVWorld(destinationName).getName();
+					destinationName = args[1];
+					originName = args[2];
+					fancyTextOriginName = multiverseworldmanager.getMVWorld(originName).getName();
+					fancyTextDestinationName = multiverseworldmanager.getMVWorld(destinationName).getName();
 						
 					List<String> configList;
 						
@@ -312,8 +398,10 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 							sender.sendMessage("All teleports to this destination are already blocked via a wildcard filter entry.");
 							return true;
 						}
+						configList.add(originName);
 					}
 					config.set("teleportfilter." + destinationName, configList);
+					plugin.saveConfig();
 					if (sender instanceof Player) sender.sendMessage("Filter entry for destination world " + fancyTextDestinationName + " and origin world " + fancyTextOriginName + " successfully added.");
 					log(Level.INFO, "Filter entry for destination world " + destinationName + " and origin world " + originName + " successfully added.");
 					return true;
@@ -329,25 +417,26 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 			}
 		}
 		// Filter Remove Command
-		if (cmd.getName().equalsIgnoreCase("mvtpffilter") && args[0].equalsIgnoreCase("remove") && (args[1] != null) && (args[2] != null) && (sender.hasPermission("multiverse.teleportfilter.filter.remove") || (!(sender instanceof Player)))) {
-			String destinationName = args[1];
-			String originName = args[2];
+		if (cmd.getName().equalsIgnoreCase("mvtpffilter") && args[0].equalsIgnoreCase("remove") && (args.length == 3)) {
+			destinationName = args[1];
+			originName = args[2];
 			List<String> configList;
 						
-			if (config.getStringList("teleportfilter." + destinationName) == null) {
-				sender.sendMessage(destinationName + " doesn't have a filter entry.");
+			if (config.getStringList("teleportfilter." + destinationName).size() == 0) {
+				sender.sendMessage("The filter doesn't have an existing filter entry for destination " + destinationName + ".");
 				return true;
 			}
 			else {
 				configList = config.getStringList("teleportfilter." + destinationName);
 				if (!configList.contains(originName)) {
-					sender.sendMessage(originName + " doesn't have a filter entry under " + destinationName + ".");
+					sender.sendMessage("The filter doesn't have an existing entry for origin " + originName + " under destination " + destinationName + ".");
 					return true;
 				}
 				else {
-					configList.add(originName);
+					configList.remove(originName);
 					config.set("teleportfilter." + destinationName, configList);
-					if (sender instanceof Player) sender.sendMessage("Filter entry for origin world " + originName + "under destination world " + destinationName + " successfully removed.");
+					plugin.saveConfig();
+					if (sender instanceof Player) sender.sendMessage("Filter entry for destination world " + destinationName + " and origin world " + originName + " successfully removed.");
 					log(Level.INFO, "Filter entry for origin world " + originName + "under destination world " + destinationName + " successfully removed.");
 					return true;
 				}
