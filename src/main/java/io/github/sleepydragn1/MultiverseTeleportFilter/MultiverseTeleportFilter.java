@@ -34,9 +34,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.Server;
 import org.bukkit.event.*;
 import org.bukkit.command.*;
-import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.ChatColor;
 
 import com.onarandombox.MultiverseCore.MultiverseCore;
 import com.onarandombox.MultiverseCore.event.MVTeleportEvent;
@@ -101,6 +101,12 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
     	log(Level.INFO, "enabled.");
     	plugin.core.incrementPluginCount();
     	
+		// Checks if the "soft-disable" option in config.yml is true/false and acts accordingly
+		if (config.getBoolean("options.soft-disable")) {
+			plugin.softDisable = true;
+			log(Level.INFO,"Teleport filter soft disabled due to configuration!");
+    	}
+    	
     	getServer().getPluginManager().registerEvents(plugin, plugin);
     }
 		
@@ -122,10 +128,10 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 		// the world names to the filter's retrieved list.
 		// The fancyText versions of these two variables include the coloring/stylizing for the world names as set by
 		// Multiverse-Core's worlds.yml file, and are used in messages to the player.
-		originName = teleportee.getWorld().getName();
-		fancyTextOriginName = multiverseworldmanager.getMVWorld(originName).getName();
-		destinationName = e.getDestination().getLocation(null).getWorld().getName();
+		fancyTextOriginName = multiverseworldmanager.getMVWorld(teleportee.getWorld()).getName();
+		originName = ChatColor.stripColor(fancyTextOriginName);
 		fancyTextDestinationName = e.getDestination().getName();
+		destinationName = ChatColor.stripColor(fancyTextDestinationName);
 		
 		// Allows the console to bypass the teleportFilter check
 		if (teleporter instanceof Player) {
@@ -152,7 +158,7 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 		// returns 2 ----> Teleportee's teleport is denied based on a specific filter (i.e. teleports from this specific origin world to the
 		// destination is denied)
 		if (config.getStringList("teleportfilter." + destinationName).contains(originName)) {
-			if (config.getBoolean("options.ignore-permissions")) return 1;
+			if (config.getBoolean("options.ignore-filter-permissions")) return 1;
 			if (!teleportee.hasPermission("multiverse.teleportfilter.bypass")) {	
 	        	if(teleportee.hasPermission("multiverse.teleportfilter." + destinationName + ".*")) return 0;
 				if(teleportee.hasPermission("multiverse.teleportfilter." + destinationName + "." + originName)) return 0;
@@ -161,7 +167,7 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 			else return 0;
 		}
 		if (config.getStringList("teleportfilter." + destinationName).contains("all") || config.getStringList("teleportfilter." + destinationName).contains("wildcard")) {
-			if (config.getBoolean("options.ignore-permissions")) return 2;
+			if (config.getBoolean("options.ignore-filter-permissions")) return 2;
 			if (!teleportee.hasPermission("multiverse.teleportfilter.bypass")) {	
 	        	if(teleportee.hasPermission("multiverse.teleportfilter." + destinationName + ".*")) return 0;
 				if(teleportee.hasPermission("multiverse.teleportfilter." + destinationName + "." + originName)) return 0;
@@ -185,13 +191,13 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
     	}	
 		
 		// Checks if the "soft-disable" option in config.yml is true/false and acts accordingly
-		if (config.getBoolean("options.soft-disable") && (!softDisable)) {
+		if (config.getBoolean("options.soft-disable")) {
 			plugin.softDisable = true;
-			log(Level.INFO,"Teleport filter disabled due to configuration change!");
+			log(Level.INFO,"Teleport filter soft disabled due to configuration change!");
     	}
-		if ((!config.getBoolean("options.soft-disable")) && (softDisable)) {
+		if ((!config.getBoolean("options.soft-disable"))) {
 			plugin.softDisable = false;
-			log(Level.INFO,"Teleport filter enabled due to configuration change!");
+			log(Level.INFO,"Teleport filter soft enabled due to configuration change!");
     	}	
 	}
 	
@@ -217,9 +223,11 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 		}
 		// Disable command
 		if (cmd.getName().equalsIgnoreCase("mvtpfdisable")) {
-			if (softDisable = false) {
+			if (!plugin.softDisable) {
 				plugin.softDisable = true;
 				config.set("options.soft-disable", true);
+				plugin.saveConfig();
+				if (sender instanceof Player) sender.sendMessage("Teleport filter disabled!");
 				log(Level.INFO,"Teleport filter disabled!");
 			}
 			else sender.sendMessage("The teleport filter was already disabled!");
@@ -227,9 +235,11 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 		}
 		// Enable command
 		if (cmd.getName().equalsIgnoreCase("mvtpfenable")) {
-			if (softDisable = false) {
-				plugin.softDisable = true;
+			if (plugin.softDisable) {
+				plugin.softDisable = false;
 				config.set("options.soft-disable", false);
+				plugin.saveConfig();
+				if (sender instanceof Player) sender.sendMessage("Teleport filter enabled!");
 				log(Level.INFO,"Teleport filter enabled!");
 			}
 			else sender.sendMessage("The teleport filter was already enabled!");
@@ -284,17 +294,17 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 			// World checking
 			if (playerFlag) {
 				if (args.length > 2) {
-					if (bukkit.getWorld(args[1]) == null) {
+					if (!multiverseworldmanager.isMVWorld(args[1])) {
 						sender.sendMessage(args[1] + " is not a valid world!");
 						return true;
 					}
-					if (bukkit.getWorld(args[2]) == null) {
+					if (!multiverseworldmanager.isMVWorld(args[2])) {
 						sender.sendMessage(args[2] + " is not a valid world!");
 						return true;
 					}
 					else {
-						destinationName = bukkit.getWorld(args[1]).getName();
-						originName = bukkit.getWorld(args[2]).getName();
+						fancyTextDestinationName = multiverseworldmanager.getMVWorld(args[1]).getName();
+						fancyTextOriginName = multiverseworldmanager.getMVWorld(args[2]).getName();
 					}
 				}
 				else return false;
@@ -302,37 +312,37 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 			else {
 				// Checks if the worlds are valid
 				if (args.length > 1) {
-					if (bukkit.getWorld(args[0]) == null) {
+					if (!multiverseworldmanager.isMVWorld(args[0])) {
 						sender.sendMessage(args[0] + " is not a valid world!");
 						return true;
 					}
 					else {
-						destinationName = bukkit.getWorld(args[0]).getName();
+						fancyTextDestinationName = multiverseworldmanager.getMVWorld(args[0]).getName();
 					}
 				
-					if (bukkit.getWorld(args[1]) == null) {
+					if (!multiverseworldmanager.isMVWorld(args[1])) {
 						sender.sendMessage(args[1] + " is not a valid world!");
 						return true;
 					}
 					else {
-						originName = bukkit.getWorld(args[1]).getName();
+						fancyTextOriginName = multiverseworldmanager.getMVWorld(args[1]).getName();
 					}
 				}
 				else {
-					if (bukkit.getWorld(args[0]) == null) {
+					if (!multiverseworldmanager.isMVWorld(args[0])) {
 						sender.sendMessage(args[0] + " is not a valid world!");
 						return true;
 					}
 					else {
-						destinationName = bukkit.getWorld(args[0]).getName();
-						originName = ((Player) sender).getWorld().getName();
+						fancyTextDestinationName = multiverseworldmanager.getMVWorld(args[0]).getName();
+						fancyTextOriginName = multiverseworldmanager.getMVWorld(((Player) sender).getWorld()).getName();
 					}
 				}
 			}
 			
 			// Return of the Fancy Text names used in sendMessage()
-			fancyTextOriginName = multiverseworldmanager.getMVWorld(originName).getName();
-			fancyTextDestinationName = multiverseworldmanager.getMVWorld(destinationName).getName();
+			originName = ChatColor.stripColor(fancyTextOriginName);
+			destinationName = ChatColor.stripColor(fancyTextDestinationName);
 			
 			// Checks if the specified player is allowed to do the specified teleport, then reports back.
 			if (!personalFlag && (sender instanceof Player)) {
@@ -375,8 +385,8 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 		}
 		// Filter Add Command
 		if (cmd.getName().equalsIgnoreCase("mvtpffilter") && args[0].equalsIgnoreCase("add") && (args.length == 3)) {
-			if (bukkit.getWorld(args[1]) != null) {
-				if ((bukkit.getWorld(args[2]) != null) || (args[2] == "all") || (args[2] == "wildcard")) {
+			if (multiverseworldmanager.isMVWorld(args[1])) {
+				if (multiverseworldmanager.isMVWorld(args[2]) || (args[2] == "all") || (args[2] == "wildcard")) {
 					destinationName = args[1];
 					originName = args[2];
 					fancyTextOriginName = multiverseworldmanager.getMVWorld(originName).getName();

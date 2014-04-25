@@ -9,7 +9,7 @@
 options:
     enabled: true
     soft-disable: false
-    ignore-permissions: false
+    ignore-filter-permissions: false
     ignore-core-version-check: false
 teleportfilter:
     exampledestinationworld1:
