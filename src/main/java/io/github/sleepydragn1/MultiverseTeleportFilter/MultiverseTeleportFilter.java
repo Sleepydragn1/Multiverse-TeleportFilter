@@ -2,7 +2,7 @@
  * Multiverse 2 Copyright (c) the Multiverse Team 2011.                       *
  * Multiverse 2 is licensed under the BSD License.                            *
  * For more information please check the README.md file included              *
- * with this project.                                                         *
+ * with Multiverse-Core.                                                      *
  ******************************************************************************/
 
 /******************************************************************************
@@ -15,12 +15,12 @@
  * sleepydragon10@hotmail.com for other suggestions or concerns if needed.    *
  * 																			  *
  * While this plugin depends on significant portions of Multiverse-Core, it   *
- * was developed independently of the Multiverse Team. As such, it should not *
- * be taken as a reflection of their quality of work.						  *
+ * was developed independently of the Multiverse Team, and does not           *
+ * redistribute any of their code.					                          *
  * 																			  *
- * AKA - I'm a novice Java/Bukkit coder, and I wouldn't want to tarnish		  *
- * their reputation, especially considering how nice their current code-base  *
- * is.																		  *
+ * I'm a novice Java/Bukkit coder, so expect mistakes, odd coding that
+ * doesn't match normal coding conventions, inefficiencies, bugs, and other
+ * maladies.
  ******************************************************************************/
 
 package io.github.sleepydragn1.MultiverseTeleportFilter;
