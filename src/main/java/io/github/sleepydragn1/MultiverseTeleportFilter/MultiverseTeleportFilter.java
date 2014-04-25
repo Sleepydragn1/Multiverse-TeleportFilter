@@ -340,7 +340,6 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 				}
 			}
 			
-			// Return of the Fancy Text names used in sendMessage()
 			originName = ChatColor.stripColor(fancyTextOriginName);
 			destinationName = ChatColor.stripColor(fancyTextDestinationName);
 			
@@ -387,10 +386,10 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 		if (cmd.getName().equalsIgnoreCase("mvtpffilter") && args[0].equalsIgnoreCase("add") && (args.length == 3)) {
 			if (multiverseworldmanager.isMVWorld(args[1])) {
 				if (multiverseworldmanager.isMVWorld(args[2]) || (args[2] == "all") || (args[2] == "wildcard")) {
-					destinationName = args[1];
-					originName = args[2];
-					fancyTextOriginName = multiverseworldmanager.getMVWorld(originName).getName();
-					fancyTextDestinationName = multiverseworldmanager.getMVWorld(destinationName).getName();
+					fancyTextDestinationName = multiverseworldmanager.getMVWorld(args[1]).getName();
+					destinationName = ChatColor.stripColor(fancyTextDestinationName);
+					fancyTextOriginName = multiverseworldmanager.getMVWorld(args[2]).getName();
+					originName = ChatColor.stripColor(fancyTextOriginName);
 						
 					List<String> configList;
 						
