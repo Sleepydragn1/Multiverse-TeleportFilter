@@ -55,7 +55,7 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 	private FileConfiguration config;
 	
 	// Soft disable flag (used in "/mvtpf disable" and "/mvtpf enable")
-	public boolean softDisable = false;
+	public boolean filterDisable = false;
 	
 	// Called when the plugin is enabled
 	@Override    
@@ -102,8 +102,8 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
     	plugin.core.incrementPluginCount();
     	
 		// Checks if the "soft-disable" option in config.yml is true/false and acts accordingly
-		if (config.getBoolean("options.soft-disable")) {
-			plugin.softDisable = true;
+		if (config.getBoolean("options.filter-disabled")) {
+			plugin.filterDisable = true;
 			log(Level.INFO,"Teleport filter soft disabled due to configuration!");
     	}
     	
@@ -113,9 +113,9 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 	// Called when a MVTeleportEvent happens (i.e. someone attempts to teleport somewhere using Multiverse)
 	@EventHandler
 	public void onTP(MVTeleportEvent e) {	
-		// Checks if the softDisable flag is true (if "/mvtpfdisable" has been run, it will be true), and then stops any filter
+		// Checks if the filterDisable flag is true (if "/mvtpfdisable" has been run, it will be true), and then stops any filter
 		// checking if it is true
-		if (plugin.softDisable) return;
+		if (plugin.filterDisable) return;
 		
 		Player teleportee; 
 		CommandSender teleporter;
@@ -192,11 +192,11 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 		
 		// Checks if the "soft-disable" option in config.yml is true/false and acts accordingly
 		if (config.getBoolean("options.soft-disable")) {
-			plugin.softDisable = true;
+			plugin.filterDisable = true;
 			log(Level.INFO,"Teleport filter soft disabled due to configuration change!");
     	}
 		if ((!config.getBoolean("options.soft-disable"))) {
-			plugin.softDisable = false;
+			plugin.filterDisable = false;
 			log(Level.INFO,"Teleport filter soft enabled due to configuration change!");
     	}	
 	}
@@ -211,8 +211,8 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 			// Indicates it's running and gives the current version
 			sender.sendMessage("Running Multiverse-TeleportFilter version " + plugin.getDescription().getVersion() + "!");
 			// Indicates whether or not the filter is enabled
-			if (softDisable) sender.sendMessage("The teleport filter is currently disabled.");
-			if (!softDisable) sender.sendMessage("The teleport filter is currently enabled.");
+			if (filterDisable) sender.sendMessage("The teleport filter is currently disabled.");
+			if (!filterDisable) sender.sendMessage("The teleport filter is currently enabled.");
 			return true;
 		}
 		// Reload command
@@ -223,8 +223,8 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 		}
 		// Disable command
 		if (cmd.getName().equalsIgnoreCase("mvtpfdisable")) {
-			if (!plugin.softDisable) {
-				plugin.softDisable = true;
+			if (!plugin.filterDisable) {
+				plugin.filterDisable = true;
 				config.set("options.soft-disable", true);
 				plugin.saveConfig();
 				if (sender instanceof Player) sender.sendMessage("Teleport filter disabled!");
@@ -235,8 +235,8 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 		}
 		// Enable command
 		if (cmd.getName().equalsIgnoreCase("mvtpfenable")) {
-			if (plugin.softDisable) {
-				plugin.softDisable = false;
+			if (plugin.filterDisable) {
+				plugin.filterDisable = false;
 				config.set("options.soft-disable", false);
 				plugin.saveConfig();
 				if (sender instanceof Player) sender.sendMessage("Teleport filter enabled!");
@@ -247,8 +247,8 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 		}
 		// Status command
 		if (cmd.getName().equalsIgnoreCase("mvtpfstatus")) {
-			if (softDisable) sender.sendMessage("The teleport filter is currently disabled.");
-			if (!softDisable) sender.sendMessage("The teleport filter is currently enabled.");
+			if (filterDisable) sender.sendMessage("The teleport filter is currently disabled.");
+			if (!filterDisable) sender.sendMessage("The teleport filter is currently enabled.");
 			else sender.sendMessage("The teleport filter has become Schrödinger's cat, please contact the plugin author accordingly.");
 			return true;
 		}
