@@ -49,6 +49,7 @@ permissions:
             multiverse.teleportfilter.allowed: true
             multiverse.teleportfilter.filter.add: true
             multiverse.teleportfilter.filter.remove: true
+            multiverse.teleportfilter.bypass
         default: op
     multiverse.teleportfilter.status:
         description: Allows players to run /mvtpf

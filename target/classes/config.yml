@@ -1,9 +1,10 @@
-##########################################################################
-#            Multiverse Teleport Filter Configuration                    #
-#                                                                        #
-#     Information about formatting and example configs coming soon.      #
-#                                                                        #
-##########################################################################
+##################################################################################
+#                 Multiverse Teleport Filter Configuration                       #
+#                                                                                #
+#           You can find configuration information and examples at               #
+#  https://github.com/Sleepydragn1/Multiverse-TeleportFilter/wiki/Configuration  #
+#                                                                                #
+##################################################################################
 
 options:
     enabled: false
