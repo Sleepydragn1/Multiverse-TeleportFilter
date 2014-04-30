@@ -101,7 +101,7 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
     	log(Level.INFO, "enabled.");
     	plugin.core.incrementPluginCount();
     	
-		// Checks if the "soft-disable" option in config.yml is true/false and acts accordingly
+		// Checks if the "filter-disabled" option in config.yml is true/false and acts accordingly
 		if (config.getBoolean("options.filter-disabled")) {
 			plugin.filterDisable = true;
 			log(Level.INFO,"Teleport filter soft disabled due to configuration!");
