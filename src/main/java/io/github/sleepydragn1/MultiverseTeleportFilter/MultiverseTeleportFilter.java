@@ -452,6 +452,37 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 			}
 		}
 		return false;
+		// Filter Check Command
+		if (cmd.getName().equalsIgnoreCase("mvtpffilter") && args[0].equalsIgnoreCase("check") && (args.length == 2)) {
+			destinationName = args[1];
+			originName = args[2];
+			List<String> configList;
+			
+			if (multiverseworldmanager.isMVWorld(args[1])) {
+				if (multiverseworldmanager.isMVWorld(args[2])) {
+					fancyTextDestinationName = multiverseworldmanager.getMVWorld(destinationName).getName();
+					fancyTextOriginName = multiverseworldmanager.getMVWorld(originName).getName();
+					configList = config.getStringList();
+					if (configList.length() > 0) {
+						if (configList.contains(originName)) {
+							if (sender instanceof Player) sender.sendMessage("The filter entry for destination world " + fancyTextDestinationName + " and origin world " + fancyTextOriginName + " exists.");
+							else sender.sendMessage("The filter entry for destination world " + destinationName + " and origin world " + originName + " exists.");
+						}
+						else {
+							if (sender instanceof Player) sender.sendMessage("The filter entry for destination world " + fancyTextDestinationName + " and origin world " + fancyTextOriginName + " does not exist.");
+							else sender.sendMessage("The filter entry for destination world " + destinationName + " and origin world " + originName + " does not exist.");
+						}
+					}
+					else {
+						if (sender instanceof Player) sender.sendMessage("No filter entry for destination world " + fancyTextDestinationName + " exists.");
+						else sender.sendMessage("No filter entry for destination world " + destinationName + " exists.");
+					}
+				}
+				else sender.sendMessage(originName + " is not a valid world!");
+			}
+			else sender.sendMessage(destinationName + " is not a valid world!");
+			return true;
+		}
 	}
 	
 	// Standard method overrides needed when extending MVPlugin
