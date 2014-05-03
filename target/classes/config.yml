@@ -10,6 +10,7 @@ options:
     enabled: false
     filter-disabled: false
     ignore-filter-permissions: false
+    ignore-command-permissions: false
     ignore-core-version-check: false
 teleportfilter:
     exampledestinationworld1:
