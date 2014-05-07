@@ -27,8 +27,10 @@ package io.github.sleepydragn1.MultiverseTeleportFilter;
 
 import java.util.logging.Logger;
 import java.util.logging.Level;
+import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
 
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.Server;
@@ -151,12 +153,16 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 		return;
 	}
 	
-	// Here's the actual teleport filtering method
+	// The actual teleport filtering method
 	public int teleportFilter(Player teleportee, String originName, String destinationName) {
 		// returns 0 ----> Teleportee is allowed to make the teleport
 		// returns 1 ----> Teleportee's teleport is denied based on a wildcard filter (i.e. all teleports to that destination world are denied)
 		// returns 2 ----> Teleportee's teleport is denied based on a specific filter (i.e. teleports from this specific origin world to the
 		// destination is denied)
+		
+		// Allows Ops to bypass the teleport filter if "ye-olde-op-system" is true.
+		if (config.getBoolean("options.ye-olde-op-system") && teleportee.isOp()) return 0;
+		
 		if (config.getStringList("teleportfilter." + destinationName).contains(originName)) {
 			if (config.getBoolean("options.ignore-filter-permissions")) return 1;
 			if (!teleportee.hasPermission("multiverse.teleportfilter.bypass")) {	
@@ -209,7 +215,7 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 		// Parent command/status command - indicates the plugin is running and gives the current version
 		if (cmd.getName().equalsIgnoreCase("mvtpf")) {
 			// Permissions check
-			if (!commandPermissible(sender, "multiverse.teleportfilter.status")) return true;
+			if (!commandPermissible(sender, "multiverse.teleportfilter.info")) return true;
 			
 			sender.sendMessage("Running Multiverse-TeleportFilter version " + plugin.getDescription().getVersion() + "!");
 			// Indicates whether or not the filter is enabled
@@ -217,19 +223,21 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 			if (!filterDisable) sender.sendMessage("The teleport filter is currently enabled.");
 			return true;
 		}
+		
 		// Reload command
 		if (cmd.getName().equalsIgnoreCase("mvtpfreload")) { 
 			// Permissions check
-			if (!commandPermissible(sender, "multiverse.teleportfilter.status")) return true;
+			if (!commandPermissible(sender, "multiverse.teleportfilter.reload")) return true;
 			
 			plugin.reload();
 			sender.sendMessage("Plugin configuration reloaded!");
 			return true;
 		}
+		
 		// Disable command
 		if (cmd.getName().equalsIgnoreCase("mvtpfdisable")) {
 			// Permissions check
-			if (!commandPermissible(sender, "multiverse.teleportfilter.status")) return true;
+			if (!commandPermissible(sender, "multiverse.teleportfilter.disable")) return true;
 			
 			if (!plugin.filterDisable) {
 				plugin.filterDisable = true;
@@ -241,10 +249,11 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 			else sender.sendMessage("The teleport filter was already disabled!");
 			return true;
 		}
+		
 		// Enable command
 		if (cmd.getName().equalsIgnoreCase("mvtpfenable") ) {
 			// Permissions check
-			if (!commandPermissible(sender, "multiverse.teleportfilter.status")) return true;
+			if (!commandPermissible(sender, "multiverse.teleportfilter.enable")) return true;
 			
 			if (plugin.filterDisable) {
 				plugin.filterDisable = false;
@@ -256,6 +265,7 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 			else sender.sendMessage("The teleport filter was already enabled!");
 			return true;
 		}
+		
 		// Status command
 		if (cmd.getName().equalsIgnoreCase("mvtpfstatus")) {
 			// Permissions check
@@ -273,7 +283,7 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 		// Allowed command
 		if (cmd.getName().equalsIgnoreCase("mvtpfallowed") && (args.length > 0)) {	
 			// Permissions check
-			if (!commandPermissible(sender, "multiverse.teleportfilter.status")) return true;
+			if (!commandPermissible(sender, "multiverse.teleportfilter.allowed")) return true;
 			
 			Player player;
 			// Flag indicates whether or not the sender is checking themselves via the command
@@ -391,14 +401,16 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 			}
 			return true;
 		}
+		
 		// Parent filter command
 		if (cmd.getName().equalsIgnoreCase("mvtpffilter") && (args.length == 0) && ((sender.hasPermission("multiverse.teleportfilter.filter.add") || (sender.hasPermission("multiverse.teleportfilter.filter.remove"))))) {
 			return false;
 		}
+		
 		// Filter Add Command
 		if (cmd.getName().equalsIgnoreCase("mvtpffilter") && args[0].equalsIgnoreCase("add") && (args.length == 3)) {
 			// Permissions check
-			if (!commandPermissible(sender, "multiverse.teleportfilter.status")) return true;
+			if (!commandPermissible(sender, "multiverse.teleportfilter.add")) return true;
 			
 			if (multiverseworldmanager.isMVWorld(args[1])) {
 				if (multiverseworldmanager.isMVWorld(args[2]) || (args[2] == "all") || (args[2] == "wildcard")) {
@@ -433,10 +445,11 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 			}
 			return true;
 		}
+		
 		// Filter Remove Command
 		if (cmd.getName().equalsIgnoreCase("mvtpffilter") && args[0].equalsIgnoreCase("remove") && (args.length == 3)) {
 			// Permissions check
-			if (!commandPermissible(sender, "multiverse.teleportfilter.status")) return true;
+			if (!commandPermissible(sender, "multiverse.teleportfilter.remove")) return true;
 			
 			destinationName = args[1];
 			originName = args[2];
@@ -456,14 +469,15 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 			}
 			return true;
 		}
+		
 		// Filter Check Command
-		if (cmd.getName().equalsIgnoreCase("mvtpffilter") && args[0].equalsIgnoreCase("check") && (args.length == 2)) {
+		if (cmd.getName().equalsIgnoreCase("mvtpffilter") && args[0].equalsIgnoreCase("check") && (args.length == 3)) {
+			// Permissions check
+			if (!commandPermissible(sender, "multiverse.teleportfilter.check")) return true;
+			
 			destinationName = args[1];
 			originName = args[2];
 			List<String> configList;
-			
-			// Permissions check
-			if (!commandPermissible(sender, "multiverse.teleportfilter.status")) return true;
 			
 			if (multiverseworldmanager.isMVWorld(args[1])) {
 				if (multiverseworldmanager.isMVWorld(args[2])) {
@@ -490,17 +504,44 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 			else sender.sendMessage(destinationName + " is not a valid world!");
 			return true;
 		}
+		
+		// Filter List Command
+		if (cmd.getName().equalsIgnoreCase("mvtpffilter") && args[0].equalsIgnoreCase("list")) {
+			// Permissions check
+			if (!commandPermissible(sender, "multiverse.teleportfilter.filter.list")) return true;
+			
+			List<String> destinations = config.getStringList("teleportfilter.");
+			Integer destinationsSize = destinations.size();
+			
+			// If there are no filter rules, this runs
+			if (destinationsSize == 0) {
+				sender.sendMessage("There are no teleport filter entries!");
+				return true;
+			}
+			
+			Map<String, List<String>> destinationsMap = new HashMap<String, List<String>>();
+			String forDestination;
+			List<String> forOriginsList;
+			
+			for (int i=0; i<destinationsSize; i++) {
+				forDestination = destinations.get(i);
+				forOriginsList = config.getStringList("teleportfilter." + forDestination);
+				
+				destinationsMap.put(forDestination, forOriginsList);
+			}
+		}
+		
 		return false;
 	}
-	
+		
 	// Permission checking method for commands
 	public boolean commandPermissible(CommandSender sender, String permission) {
 		// If the method returns true, the player is allowed to run the command
 		// If the method returns false, the player is not allowed to run the command, and a message reflecting this
 		// is issued to them.
 		
-		// System for allowing those not using permissions to still use the plugin's commands (if they're an op)
-		if (config.getBoolean("options.ignore-command-permissions")) {
+		// System for allowing those not using permissions to still use the plugin's commands (if they're an Op)
+		if (config.getBoolean("options.ye-olde-op-system")) {
 			if (!(sender instanceof Player)) return true;
 			if (sender.isOp()) return true;
 			else {

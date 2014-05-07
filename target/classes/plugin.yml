@@ -31,15 +31,17 @@ permissions:
     multiverse.teleportfilter.*:
         description: Bestows all Multiverse-TeleportFilter permissions.
         children:
-            multiverse.teleportfilter.status: true
+            multiverse.teleportfilter.info: true
             multiverse.teleportfilter.reload: true
             multiverse.teleportfilter.disable: true
             multiverse.teleportfilter.enable: true
+            multiverse.teleportfilter.status: true
             multiverse.teleportfilter.allowed: true
             multiverse.teleportfilter.filter.add: true
             multiverse.teleportfilter.filter.remove: true
+            multiverse.teleportfilter.filter.check: true
             multiverse.teleportfilter.bypass: true
-    multiverse.teleportfilter.status:
+    multiverse.teleportfilter.info:
         description: Allows players to run /mvtpf.
     multiverse.teleportfilter.reload:
         description: Allows players to run /mvtpfreload. 
@@ -47,11 +49,15 @@ permissions:
         description: Allows players to run /mvtpfdisable. 
     multiverse.teleportfilter.enable:
         description: Allows players to run /mvtpfenable. 
+    multiverse.teleportfilter.status:
+        description: Allows players to run /mvtpfstatus.
     multiverse.teleportfilter.allowed:
         description: Allows players to run /mvtpfallowed.
     multiverse.teleportfilter.filter.add:
         description: Allows players to run /mvtpffilter add.
     multiverse.teleportfilter.filter.remove:
-        description: Allows players to run /mvtpffilter remove.  
+        description: Allows players to run /mvtpffilter remove.
+    multiverse.teleportfilter.filter.check:
+        description: Allows players to run /mvtpffilter check.  
     multiverse.teleportfilter.bypass:
         description: Allows players to bypass the teleport filter and teleport to any world they have access to.
