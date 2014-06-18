@@ -7,30 +7,35 @@
 
 /******************************************************************************
  * Multiverse-TeleportFilter was developed by Sleepydragn1.                   *
- * 																			  *
- * Source can be found at 													  *
- * https://github.com/Sleepydragn1/Multiverse-TeleportFilter.				  *
- * 																			  *
- * Report any/all bugs on Github, and you can email me directly at 			  *
+ *                                                                            *
+ * Source can be found at                                                     *
+ * https://github.com/Sleepydragn1/Multiverse-TeleportFilter.                 *
+ *                                                                            *
+ * Report any/all bugs on Github, and you can email me directly at            *
  * sleepydragon10@hotmail.com for other suggestions or concerns if needed.    *
- * 																			  *
+ *                                                                            *
  * While this plugin depends on significant portions of Multiverse-Core, it   *
  * was developed independently of the Multiverse Team, and does not           *
- * redistribute any of their code.					                          *
- * 																			  *
+ * redistribute any of their code.                                            *
+ *                                                                            *
  * I'm a novice Java/Bukkit coder, so expect mistakes, odd coding that        *
  * doesn't match normal coding conventions, inefficiencies, bugs, and other   *
  * maladies.                                                                  *
  ******************************************************************************/
 
+// TODO: Create javadocs for methods
+// TODO: Investigate removal of colored world names where applicable
+// TODO: Allowed command
+// TODO: Make config reload also work with /mv reload
+// TODO: Proper paging for /mvtpffilter list
+// TODO: Investigate using both aliases and normal world names (why does it work in the config?)
+
 package io.github.sleepydragn1.MultiverseTeleportFilter;
 
 import java.util.logging.Logger;
 import java.util.logging.Level;
-import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Map;
 
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.Server;
@@ -44,12 +49,14 @@ import com.onarandombox.MultiverseCore.MultiverseCore;
 import com.onarandombox.MultiverseCore.event.MVTeleportEvent;
 import com.onarandombox.MultiverseCore.api.*;
 
+import io.github.sleepydragn1.MultiverseTeleportFilter.TabText;
+
 public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlugin, Listener {
 	MultiverseTeleportFilter plugin;
 	Server bukkit = getServer();
 	
 	private MultiverseCore core;
-	private MVWorldManager multiverseworldmanager = null;
+	private MVWorldManager multiverseworldmanager;
 	
 	private static final Logger log = Logger.getLogger("Minecraft");
 	private static final String logPrefix = "[Multiverse-TeleportFilter] ";
@@ -121,32 +128,32 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 		
 		Player teleportee; 
 		CommandSender teleporter;
-		String originName, fancyTextOriginName, destinationName, fancyTextDestinationName;
+		String originName, coloredOriginName, destinationName, coloredDestinationName;
 		
 		teleporter = e.getTeleporter();
 		teleportee = e.getTeleportee();
 		
 		// originName and destinationName are the plaintext origin world name and destination world name and are used in comparing
 		// the world names to the filter's retrieved list.
-		// The fancyText versions of these two variables include the coloring/stylizing for the world names as set by
+		// The colored versions of these two variables include the coloring/stylizing for the world names as set by
 		// Multiverse-Core's worlds.yml file, and are used in messages to the player.
-		fancyTextOriginName = multiverseworldmanager.getMVWorld(teleportee.getWorld()).getName();
-		originName = ChatColor.stripColor(fancyTextOriginName);
-		fancyTextDestinationName = e.getDestination().getName();
-		destinationName = ChatColor.stripColor(fancyTextDestinationName);
+		coloredOriginName = multiverseworldmanager.getMVWorld(teleportee.getWorld()).getColoredWorldString();
+		originName = ChatColor.stripColor(coloredOriginName);
+		coloredDestinationName = e.getDestination().getName();
+		destinationName = ChatColor.stripColor(coloredDestinationName);
 		
 		// Allows the console to bypass the teleportFilter check
 		if (teleporter instanceof Player) {
 			// Used in wildcard filter situations
 			if (teleportFilter(teleportee, originName, destinationName) == 1) {
 				e.setCancelled(true);
-				teleportee.sendMessage("You're not allowed to teleport to " + fancyTextDestinationName + ".");
+				teleportee.sendMessage("You're not allowed to teleport to " + coloredDestinationName + ".");
 				return;
 			}
 			// Used in specific filter situations
 			if (teleportFilter(teleportee, originName, destinationName) == 2) {
 				e.setCancelled(true);
-				teleportee.sendMessage("You're not allowed to teleport to " + fancyTextDestinationName + " when in " + fancyTextOriginName + ".");
+				teleportee.sendMessage("You're not allowed to teleport to " + coloredDestinationName + " when in " + coloredOriginName + ".");
 				return;
 			}
 		}
@@ -163,20 +170,20 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 		// Allows Ops to bypass the teleport filter if "ye-olde-op-system" is true.
 		if (config.getBoolean("options.ye-olde-op-system") && teleportee.isOp()) return 0;
 		
-		if (config.getStringList("teleportfilter." + destinationName).contains(originName)) {
+		if (config.getStringList("teleportfilter." + destinationName).contains("all") || config.getStringList("teleportfilter." + destinationName).contains("wildcard")) {
 			if (config.getBoolean("options.ignore-filter-permissions")) return 1;
 			if (!teleportee.hasPermission("multiverse.teleportfilter.bypass")) {	
-	        	if(teleportee.hasPermission("multiverse.teleportfilter." + destinationName + ".*")) return 0;
-				if(teleportee.hasPermission("multiverse.teleportfilter." + destinationName + "." + originName)) return 0;
+	        	if (teleportee.hasPermission("multiverse.teleportfilter." + destinationName + ".*")) return 0;
+				if (teleportee.hasPermission("multiverse.teleportfilter." + destinationName + "." + originName)) return 0;
 				else return 1;
 	        }
 			else return 0;
 		}
-		if (config.getStringList("teleportfilter." + destinationName).contains("all") || config.getStringList("teleportfilter." + destinationName).contains("wildcard")) {
+		if (config.getStringList("teleportfilter." + destinationName).contains(originName)) {
 			if (config.getBoolean("options.ignore-filter-permissions")) return 2;
 			if (!teleportee.hasPermission("multiverse.teleportfilter.bypass")) {	
-	        	if(teleportee.hasPermission("multiverse.teleportfilter." + destinationName + ".*")) return 0;
-				if(teleportee.hasPermission("multiverse.teleportfilter." + destinationName + "." + originName)) return 0;
+	        	if (teleportee.hasPermission("multiverse.teleportfilter." + destinationName + ".*")) return 0;
+				if (teleportee.hasPermission("multiverse.teleportfilter." + destinationName + "." + originName)) return 0;
 				else return 2;
 	        }
 			else return 0;
@@ -278,7 +285,7 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 		}
 		
 		// Declaration of variables shared between commands due to naming standardization
-		String originName, destinationName, fancyTextDestinationName, fancyTextOriginName;
+		String originName, destinationName, coloredDestinationName, coloredOriginName;
 		
 		// Allowed command
 		if (cmd.getName().equalsIgnoreCase("mvtpfallowed") && (args.length > 0)) {	
@@ -330,8 +337,8 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 						return true;
 					}
 					else {
-						fancyTextDestinationName = multiverseworldmanager.getMVWorld(args[1]).getName();
-						fancyTextOriginName = multiverseworldmanager.getMVWorld(args[2]).getName();
+						coloredDestinationName = multiverseworldmanager.getMVWorld(args[1]).getColoredWorldString();
+						coloredOriginName = multiverseworldmanager.getMVWorld(args[2]).getColoredWorldString();
 					}
 				}
 				else return false;
@@ -344,14 +351,14 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 						return true;
 					}
 					else {
-						fancyTextDestinationName = multiverseworldmanager.getMVWorld(args[0]).getName();
+						coloredDestinationName = multiverseworldmanager.getMVWorld(args[0]).getColoredWorldString();
 					}
 				
 					if (!multiverseworldmanager.isMVWorld(args[1])) {
 						sender.sendMessage(args[1] + " is not a valid world!");
 						return true;
 					}
-					else fancyTextOriginName = multiverseworldmanager.getMVWorld(args[1]).getName();
+					else coloredOriginName = multiverseworldmanager.getMVWorld(args[1]).getColoredWorldString();
 				}
 				else {
 					if (!multiverseworldmanager.isMVWorld(args[0])) {
@@ -359,33 +366,33 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 						return true;
 					}
 					else {
-						fancyTextDestinationName = multiverseworldmanager.getMVWorld(args[0]).getName();
-						fancyTextOriginName = multiverseworldmanager.getMVWorld(((Player) sender).getWorld()).getName();
+						coloredDestinationName = multiverseworldmanager.getMVWorld(args[0]).getColoredWorldString();
+						coloredOriginName = multiverseworldmanager.getMVWorld(((Player) sender).getWorld()).getColoredWorldString();
 					}
 				}
 			}
 			
-			originName = ChatColor.stripColor(fancyTextOriginName);
-			destinationName = ChatColor.stripColor(fancyTextDestinationName);
+			originName = ChatColor.stripColor(coloredOriginName);
+			destinationName = ChatColor.stripColor(coloredDestinationName);
 			
 			// Checks if the specified player is allowed to do the specified teleport, then reports back.
 			if (!personalFlag && (sender instanceof Player)) {
 				switch (teleportFilter(player, originName, destinationName)) {
-					case 0: sender.sendMessage(player.getName() + " can teleport to " + fancyTextDestinationName + " from " + fancyTextOriginName + ".");
+					case 0: sender.sendMessage(player.getName() + " can teleport to " + coloredDestinationName + " from " + coloredOriginName + ".");
 							break;
-					case 1: sender.sendMessage(player.getName() + " cannot teleport to " + fancyTextDestinationName + " from any world.");
+					case 1: sender.sendMessage(player.getName() + " cannot teleport to " + coloredDestinationName + " from any world.");
 							break;
-					case 2: sender.sendMessage(player.getName() + " cannot teleport to " + fancyTextDestinationName + " from " + fancyTextOriginName + ".");
+					case 2: sender.sendMessage(player.getName() + " cannot teleport to " + coloredDestinationName + " from " + coloredOriginName + ".");
 							break;
 				}
 			}
 			if (personalFlag && (sender instanceof Player)) {
 				switch (teleportFilter(player, originName, destinationName)) {
-					case 0: sender.sendMessage ("You can teleport to " + fancyTextDestinationName + " from " + fancyTextOriginName + ".");
+					case 0: sender.sendMessage ("You can teleport to " + coloredDestinationName + " from " + coloredOriginName + ".");
 							break;
-					case 1: sender.sendMessage("You cannot teleport to " + fancyTextDestinationName + " from any world.");
+					case 1: sender.sendMessage("You cannot teleport to " + coloredDestinationName + " from any world.");
 							break;
-					case 2: sender.sendMessage("You cannot teleport to " + fancyTextDestinationName + " from " + fancyTextOriginName + ".");
+					case 2: sender.sendMessage("You cannot teleport to " + coloredDestinationName + " from " + coloredOriginName + ".");
 							break;
 				}
 			}
@@ -414,10 +421,10 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 			
 			if (multiverseworldmanager.isMVWorld(args[1])) {
 				if (multiverseworldmanager.isMVWorld(args[2]) || (args[2] == "all") || (args[2] == "wildcard")) {
-					fancyTextDestinationName = multiverseworldmanager.getMVWorld(args[1]).getName();
-					destinationName = ChatColor.stripColor(fancyTextDestinationName);
-					fancyTextOriginName = multiverseworldmanager.getMVWorld(args[2]).getName();
-					originName = ChatColor.stripColor(fancyTextOriginName);
+					coloredDestinationName = multiverseworldmanager.getMVWorld(args[1]).getColoredWorldString();
+					destinationName = ChatColor.stripColor(coloredDestinationName);
+					coloredOriginName = multiverseworldmanager.getMVWorld(args[2]).getColoredWorldString();
+					originName = ChatColor.stripColor(coloredOriginName);
 						
 					List<String> configList;
 						
@@ -433,7 +440,7 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 					}
 					config.set("teleportfilter." + destinationName, configList);
 					plugin.saveConfig();
-					if (sender instanceof Player) sender.sendMessage("Filter entry for destination world " + fancyTextDestinationName + " and origin world " + fancyTextOriginName + " successfully added.");
+					if (sender instanceof Player) sender.sendMessage("Filter entry for destination world " + coloredDestinationName + " and origin world " + coloredOriginName + " successfully added.");
 					log(Level.INFO, "Filter entry for destination world " + destinationName + " and origin world " + originName + " successfully added.");
 				}
 				else {
@@ -481,21 +488,21 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 			
 			if (multiverseworldmanager.isMVWorld(args[1])) {
 				if (multiverseworldmanager.isMVWorld(args[2])) {
-					fancyTextDestinationName = multiverseworldmanager.getMVWorld(destinationName).getName();
-					fancyTextOriginName = multiverseworldmanager.getMVWorld(originName).getName();
+					coloredDestinationName = multiverseworldmanager.getMVWorld(destinationName).getColoredWorldString();
+					coloredOriginName = multiverseworldmanager.getMVWorld(originName).getColoredWorldString();
 					configList = config.getStringList("teleportfilter." + destinationName);
 					if (configList.size() > 0) {
 						if (configList.contains(originName)) {
-							if (sender instanceof Player) sender.sendMessage("The filter entry for destination world " + fancyTextDestinationName + " and origin world " + fancyTextOriginName + " exists.");
+							if (sender instanceof Player) sender.sendMessage("The filter entry for destination world " + coloredDestinationName + " and origin world " + coloredOriginName + " exists.");
 							else sender.sendMessage("The filter entry for destination world " + destinationName + " and origin world " + originName + " exists.");
 						}
 						else {
-							if (sender instanceof Player) sender.sendMessage("The filter entry for destination world " + fancyTextDestinationName + " and origin world " + fancyTextOriginName + " does not exist.");
+							if (sender instanceof Player) sender.sendMessage("The filter entry for destination world " + coloredDestinationName + " and origin world " + coloredOriginName + " does not exist.");
 							else sender.sendMessage("The filter entry for destination world " + destinationName + " and origin world " + originName + " does not exist.");
 						}
 					}
 					else {
-						if (sender instanceof Player) sender.sendMessage("No filter entry for destination world " + fancyTextDestinationName + " exists.");
+						if (sender instanceof Player) sender.sendMessage("No filter entry for destination world " + coloredDestinationName + " exists.");
 						else sender.sendMessage("No filter entry for destination world " + destinationName + " exists.");
 					}
 				}
@@ -510,7 +517,25 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 			// Permissions check
 			if (!commandPermissible(sender, "multiverse.teleportfilter.filter.list")) return true;
 			
-			List<String> destinations = config.getStringList("teleportfilter.");
+			// Grabs the page number
+			int page;
+			// If no page number is specified, it defaults to page one
+			if (args.length < 2) page = 1; 
+			else {
+				try {
+					page = Integer.parseInt(args[1]);
+				}
+				// If the second argument is not an integer, the command returns false
+				catch (NumberFormatException e) {
+					if (args[1] == "all") page = 0;
+					else return false;
+				}
+			}
+
+			// Grabs the destinations in the form of a Set<String>, then converts them to list form
+			List<String> destinations = new ArrayList<>();
+			for (String destination : config.getConfigurationSection("teleportfilter").getKeys(false)) destinations.add(destination);
+			
 			Integer destinationsSize = destinations.size();
 			
 			// If there are no filter rules, this runs
@@ -519,16 +544,54 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 				return true;
 			}
 			
-			Map<String, List<String>> destinationsMap = new HashMap<String, List<String>>();
-			String forDestination;
+			String forDestination, forOrigin, coloredForDestination, coloredForOrigin, forDestinationColorString, forOriginColorString, forDestinationSpacing, listString, titleString;
 			List<String> forOriginsList;
+			Integer line, forDestinationLength, forOriginLength;
+			TabText tt1, tt2, tt3;
+			ChatColor forDestinationColor, forOriginColor;
+			
+			line = 0;
+			listString = "";
+			titleString = ChatColor.ITALIC + "" + ChatColor.DARK_BLUE + "Destination:`" + ChatColor.RESET + ChatColor.YELLOW + "| " + ChatColor.ITALIC + "" + ChatColor.GREEN + "Origin:" + ChatColor.RESET + ChatColor.YELLOW + "\n---------------------------------------------------------------------------------------------------`---------------------------------------------------------------------------------------------------";
 			
 			for (int i=0; i<destinationsSize; i++) {
 				forDestination = destinations.get(i);
-				forOriginsList = config.getStringList("teleportfilter." + forDestination);
-				
-				destinationsMap.put(forDestination, forOriginsList);
+				// Checks the validity of the destination
+				if (multiverseworldmanager.isMVWorld(forDestination)) {
+					forOriginsList = config.getStringList("teleportfilter." + forDestination);
+					for (int k=0; k<forOriginsList.size(); k++) {
+						line = line + 1;
+						forOrigin = forOriginsList.get(k);
+						// Checks the validity of the origin
+						if (multiverseworldmanager.isMVWorld(forOrigin)) {
+							forDestinationLength = forDestination.length();
+							forOriginLength = forOrigin.length();
+							
+							// Grabs the worlds' colors
+							coloredForDestination = multiverseworldmanager.getMVWorld(forDestination).getColoredWorldString();
+							coloredForOrigin = multiverseworldmanager.getMVWorld(forOrigin).getColoredWorldString();
+							
+							if ((i > 0) || (k > 0)) listString = listString + "\n";
+							
+							if (k == 0) listString = listString + coloredForDestination + "`" + ChatColor.YELLOW + "| " + coloredForOrigin;
+							else listString = listString + "`" + ChatColor.YELLOW + "| " + coloredForOrigin;
+							
+							if (k == (forOriginsList.size() - 1)) listString = listString + "\n" +  ChatColor.YELLOW + "---------------------------------------------------------------------------------------------------`---------------------------------------------------------------------------------------------------";
+						}
+					}
+				}
 			}
+			
+			tt1 = new TabText(titleString);
+			tt1.setTabs(new int[]{23});
+			
+			tt2 = new TabText(listString);
+			tt2.setTabs(new int[]{23});
+			
+			if (page == 1) sender.sendMessage(tt1.getPage(1));
+			sender.sendMessage(tt2.getPage(page));
+
+			return true;
 		}
 		
 		return false;
@@ -551,7 +614,7 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 		}
 		// If the sender is a player, this runs
 		if (sender instanceof Player) {
-			if (sender.hasPermission(permission) /*|| sender.hasPermission("multiverse.teleportfilter.*")*/) return true;
+			if (sender.hasPermission(permission) || sender.hasPermission("multiverse.teleportfilter.*")) return true;
 			else {
 				sender.sendMessage("You need " + ChatColor.GRAY + permission + ChatColor.WHITE + " to run this command.");
 				return false;
@@ -587,4 +650,6 @@ public final class MultiverseTeleportFilter extends JavaPlugin implements MVPlug
 	public void setCore(MultiverseCore core) {
 		plugin.core = core;
 	}
+	
+	// This plugin will save children, but not the British children.
 }

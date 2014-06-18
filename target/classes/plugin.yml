@@ -1,7 +1,7 @@
 name: Multiverse-TeleportFilter
 main: io.github.sleepydragn1.MultiverseTeleportFilter.MultiverseTeleportFilter
 authors: ['Sleepydragn1']
-version: 0.1.2
+version: 0.2.0
 depend: ['Multiverse-Core']
 commands:
     mvtpf:
@@ -40,6 +40,7 @@ permissions:
             multiverse.teleportfilter.filter.add: true
             multiverse.teleportfilter.filter.remove: true
             multiverse.teleportfilter.filter.check: true
+            multiverse.teleportfilter.filter.list: true
             multiverse.teleportfilter.bypass: true
     multiverse.teleportfilter.info:
         description: Allows players to run /mvtpf.
@@ -58,6 +59,8 @@ permissions:
     multiverse.teleportfilter.filter.remove:
         description: Allows players to run /mvtpffilter remove.
     multiverse.teleportfilter.filter.check:
-        description: Allows players to run /mvtpffilter check.  
+        description: Allows players to run /mvtpffilter check. 
+    multiverse.teleportfilter.filter.list:
+         description: Allows players to run /mvtpffilter list. 
     multiverse.teleportfilter.bypass:
         description: Allows players to bypass the teleport filter and teleport to any world they have access to.
